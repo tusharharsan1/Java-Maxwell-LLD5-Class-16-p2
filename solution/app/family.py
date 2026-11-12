@@ -53,9 +53,11 @@ def create_tables(conn: sqlite3.Connection) -> None:
 def save(conn: sqlite3.Connection, user: User) -> None:
     """Save one Customer or one Seller: one row in `users`, and one row in the table of its own kind, with the SAME id."""
     conn.execute("INSERT INTO users (id, email, kind) VALUES (?, ?, ?)", (user.id, user.email, user.kind))  # Already finished: the shared row.
-    # TODO 1 (Task 1): the row of the child, with the same id as the row in `users`.
-    #   - a customer (user.kind is "customer"): insert (the id, the shipping address) into the table `customer`
-    #   - a seller (user.kind is "seller"): insert (the id, the shop name) into the table `seller`
+    # Task 1: the row of the child, with the SAME id as the row in `users`. The word in `kind` says which table.
+    if user.kind == "customer":
+        conn.execute("INSERT INTO customer (id, shipping_address) VALUES (?, ?)", (user.id, user.shipping_address))
+    elif user.kind == "seller":
+        conn.execute("INSERT INTO seller (id, shop_name) VALUES (?, ?)", (user.id, user.shop_name))
     conn.commit()  # Already finished.
 
 
@@ -65,8 +67,9 @@ def load_all(conn: sqlite3.Connection) -> List[User]:
     for user_id, email, kind, shipping_address, shop_name in conn.execute(SELECT_ALL).fetchall():
         if kind == "customer":
             users.append(Customer(user_id, email, shipping_address))  # Already finished. It is your example for a customer.
-        # TODO 2 (Task 2): the word in `kind` decides the class.
-        #   - "seller": add a Seller (the id, the email, the shop name)
-        #   - any other word: raise UnknownKind with the text  kind 'admin' does not match any of: 'customer', 'seller'
-        #     (with the real word in the place of admin)
+        # Task 2: the word in `kind` decides the class, not the box that is empty.
+        elif kind == "seller":
+            users.append(Seller(user_id, email, shop_name))
+        else:
+            raise UnknownKind(f"kind {kind!r} does not match any of: 'customer', 'seller'")  # !r puts quotes around the word
     return users
